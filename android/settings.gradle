@@ -1,6 +1,55 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
-extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+
+def findNpxExecutable() {
+    def osName = System.getProperty("os.name").toLowerCase()
+    def npxCmd = osName.contains("win") ? "npx.cmd" : "npx"
+    
+    try {
+        def process = [osName.contains("win") ? "where" : "which", npxCmd].execute()
+        process.waitFor()
+        if (process.exitValue() == 0) {
+            def path = process.text.trim().split("\n")[0].trim()
+            if (path && new File(path).exists()) {
+                return path
+            }
+        }
+    } catch (Exception ignored) {}
+
+    def homeDir = System.getProperty("user.home")
+    def possiblePaths = [
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+        "${homeDir}/.nvm/versions/node",
+        "${homeDir}/.fnm/current/bin",
+        "${homeDir}/.asdf/shims"
+    ]
+    for (path in possiblePaths) {
+        def dir = new File(path)
+        if (dir.isDirectory()) {
+            if (path.contains("node")) {
+                def nodeDirs = dir.listFiles()
+                if (nodeDirs) {
+                    for (nodeDir in nodeDirs) {
+                        def candidate = new File(nodeDir, "bin/${npxCmd}")
+                        if (candidate.exists()) return candidate.absolutePath
+                    }
+                }
+            } else {
+                def candidate = new File(dir, npxCmd)
+                if (candidate.exists()) return candidate.absolutePath
+            }
+        }
+    }
+    return npxCmd
+}
+
+def npxExecutable = findNpxExecutable()
+
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> 
+    ex.autolinkLibrariesFromCommand([npxExecutable, "@react-native-community/cli", "config"]) 
+}
 rootProject.name = 'MrtDeferlink'
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')
+

@@ -1,4 +1,4 @@
-package com.mrtdeferlink
+package com.testapp.mindroots
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
