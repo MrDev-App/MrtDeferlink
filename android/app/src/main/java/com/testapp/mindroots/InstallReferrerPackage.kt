@@ -5,16 +5,13 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
 
-class WebViewFingerprintPackage : ReactPackage {
+class InstallReferrerPackage : ReactPackage {
+
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(
-                WebViewFingerprintModule(reactContext),
-                DeviceInfoModule(reactContext),
-                InstallReferrerModule(reactContext)
-        )
+        return listOf(InstallReferrerModule(reactContext))
     }
 
-    @Suppress("DEPRECATION")
     override fun createViewManagers(
             reactContext: ReactApplicationContext
     ): List<ViewManager<*, *>> {

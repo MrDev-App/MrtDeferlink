@@ -1,7 +1,12 @@
 package com.testapp.mindroots
+
+import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.BatteryManager
 import android.os.Build
 import android.provider.Settings
 import android.text.format.DateFormat
@@ -13,7 +18,7 @@ import com.facebook.react.bridge.ReactMethod
 import java.util.Locale
 
 class DeviceInfoModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+        ReactContextBaseJavaModule(reactContext) {
 
     override fun getName(): String {
         return "DeviceInfoModule"
@@ -33,7 +38,10 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
                 deviceName = Settings.Secure.getString(context.contentResolver, "bluetooth_name")
             }
 
-            if (deviceName.isNullOrBlank() || deviceName.contains("sdk_gphone", ignoreCase = true) || deviceName.contains("generic", ignoreCase = true)) {
+            if (deviceName.isNullOrBlank() ||
+                            deviceName.contains("sdk_gphone", ignoreCase = true) ||
+                            deviceName.contains("generic", ignoreCase = true)
+            ) {
                 try {
                     val propertyClass = Class.forName("android.os.SystemProperties")
                     val getMethod = propertyClass.getMethod("get", String::class.java)
@@ -44,14 +52,16 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
                 } catch (ignored: Exception) {}
             }
 
-            if (deviceName.isNullOrBlank() || deviceName.contains("sdk_gphone", ignoreCase = true)) {
+            if (deviceName.isNullOrBlank() || deviceName.contains("sdk_gphone", ignoreCase = true)
+            ) {
                 val manufacturer = Build.MANUFACTURER
                 val model = Build.MODEL
-                deviceName = if (model.startsWith(manufacturer, ignoreCase = true)) {
-                    model
-                } else {
-                    "$manufacturer $model"
-                }
+                deviceName =
+                        if (model.startsWith(manufacturer, ignoreCase = true)) {
+                            model
+                        } else {
+                            "$manufacturer $model"
+                        }
             }
 
             promise.resolve(deviceName)
@@ -63,27 +73,33 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun getConnectionType(promise: Promise) {
         try {
-            val cm = reactApplicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val cm =
+                    reactApplicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as
+                            ConnectivityManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val network = cm.activeNetwork
                 val capabilities = cm.getNetworkCapabilities(network)
                 if (capabilities != null) {
                     when {
-                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> promise.resolve("wifi")
-                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> promise.resolve("cellular")
-                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> promise.resolve("wifi")
-                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) -> promise.resolve("other")
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ->
+                                promise.resolve("wifi")
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ->
+                                promise.resolve("cellular")
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ->
+                                promise.resolve("wifi")
+                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ->
+                                promise.resolve("other")
                         else -> promise.resolve("none")
                     }
                     return
                 }
             } else {
-                @Suppress("DEPRECATION")
-                val activeNetworkInfo = cm.activeNetworkInfo
+                @Suppress("DEPRECATION") val activeNetworkInfo = cm.activeNetworkInfo
                 if (activeNetworkInfo != null && activeNetworkInfo.isConnected) {
-                    @Suppress("DEPRECATION")
-                    val type = activeNetworkInfo.type
-                    if (type == ConnectivityManager.TYPE_WIFI || type == ConnectivityManager.TYPE_ETHERNET) {
+                    @Suppress("DEPRECATION") val type = activeNetworkInfo.type
+                    if (type == ConnectivityManager.TYPE_WIFI ||
+                                    type == ConnectivityManager.TYPE_ETHERNET
+                    ) {
                         promise.resolve("wifi")
                         return
                     } else if (type == ConnectivityManager.TYPE_MOBILE) {
@@ -127,8 +143,14 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
     fun isHighContrastEnabled(promise: Promise) {
         try {
             val resolver = reactApplicationContext.contentResolver
-            val highContrast = Settings.Secure.getInt(resolver, "high_text_contrast_enabled", 0) == 1
-            val colorInversion = Settings.Secure.getInt(resolver, "accessibility_display_inversion_enabled", 0) == 1
+            val highContrast =
+                    Settings.Secure.getInt(resolver, "high_text_contrast_enabled", 0) == 1
+            val colorInversion =
+                    Settings.Secure.getInt(
+                            resolver,
+                            "accessibility_display_inversion_enabled",
+                            0
+                    ) == 1
             promise.resolve(highContrast || colorInversion)
         } catch (e: Exception) {
             promise.resolve(false)
@@ -139,7 +161,8 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
     fun isBoldTextEnabled(promise: Promise) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val fontWeightAdjustment = reactApplicationContext.resources.configuration.fontWeightAdjustment
+                val fontWeightAdjustment =
+                        reactApplicationContext.resources.configuration.fontWeightAdjustment
                 promise.resolve(fontWeightAdjustment > 0)
             } else {
                 promise.resolve(false)
@@ -179,12 +202,83 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
 
             val prefs = context.getSharedPreferences("mrt_deferlink_prefs", Context.MODE_PRIVATE)
             prefs.edit()
-                .putLong("stored_first_install_time", currentInstallTime)
-                .putBoolean("has_checked_deferred_match", true)
-                .apply()
+                    .putLong("stored_first_install_time", currentInstallTime)
+                    .putBoolean("has_checked_deferred_match", true)
+                    .apply()
             promise.resolve(true)
         } catch (e: Exception) {
             promise.resolve(false)
+        }
+    }
+
+    @ReactMethod
+    fun getOsVersionMajorMinor(promise: Promise) {
+        promise.resolve(Build.VERSION.RELEASE)
+    }
+
+    @ReactMethod
+    fun getBatteryLevel(promise: Promise) {
+        try {
+            val intent =
+                    reactApplicationContext.registerReceiver(
+                            null,
+                            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+                    )
+
+            val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+
+            if (level >= 0 && scale > 0) {
+                promise.resolve(level.toDouble() / scale)
+            } else {
+                promise.resolve(null)
+            }
+        } catch (e: Exception) {
+            promise.reject("BATTERY_LEVEL_ERROR", e)
+        }
+    }
+
+    @ReactMethod
+    fun isBatteryCharging(promise: Promise) {
+        try {
+            val intent =
+                    reactApplicationContext.registerReceiver(
+                            null,
+                            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+                    )
+
+            val status = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+
+            val charging =
+                    status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                            status == BatteryManager.BATTERY_STATUS_FULL
+
+            promise.resolve(charging)
+        } catch (e: Exception) {
+            promise.reject("BATTERY_CHARGING_ERROR", e)
+        }
+    }
+    @ReactMethod
+    fun getClipboardToken(promise: Promise) {
+
+        try {
+
+            val clipboard =
+                    reactApplicationContext.getSystemService(Context.CLIPBOARD_SERVICE) as
+                            ClipboardManager
+
+            if (!clipboard.hasPrimaryClip()) {
+                promise.resolve(null)
+                return
+            }
+
+            val clip = clipboard.primaryClip
+
+            val text = clip?.getItemAt(0)?.coerceToText(reactApplicationContext)?.toString()
+
+            promise.resolve(text)
+        } catch (e: Exception) {
+            promise.reject("CLIPBOARD_ERROR", e)
         }
     }
 }

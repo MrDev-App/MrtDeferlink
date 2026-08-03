@@ -1,119 +1,160 @@
-import {
-  Modal,
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
-const TOOL_ICONS = [
-  require('../types/icon.png'),
-  require('../types/icon.png'),
-  require('../types/icon.png'),
-  require('../types/icon.png'),
-  require('../types/icon.png'),
-  require('../types/icon.png'),
-];
+import Svg, { Path } from 'react-native-svg';
+
+const CURVE_HEIGHT = 140;
+const CURVE_DEPTH = 70;
+
+const { width, height } = Dimensions.get('window');
+const heightX = height / 2;
+const widthX = width / 2;
+const BOX_SIZE = 60;
+
+const coverTextScale = 3;
+const fullScreenScale = (Math.max(width, height) * 1.5) / BOX_SIZE;
 
 const PostsScreen = () => {
-  const [modalVisible, setModalVisible] = React.useState(false);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(-heightX);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+  const continueY = useSharedValue(200);
+
+  const continueAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: continueY.value }],
+  }));
+
+  console.log('width', width, 'height');
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    };
+  });
+
+  const textAnimatedStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      scale.value,
+      [1, coverTextScale],
+      ['#2C8358', '#ffffff'],
+    ),
+  }));
+
+  const animate = () => {
+    translateY.value = withSpring(
+      translateY.value === 0 ? -heightX : 0,
+      { damping: 6, stiffness: 180, mass: 0.4 },
+      finished => {
+        if (finished) {
+          scale.value = withSpring(
+            scale.value === 1 ? coverTextScale : 1,
+            { damping: 6, stiffness: 180, mass: 0.4 },
+            finished2 => {
+              if (finished2) {
+                scale.value = withDelay(
+                  100,
+                  withSpring(
+                    fullScreenScale,
+                    { damping: 6, stiffness: 180, mass: 0.4 },
+                    finished3 => {
+                      if (finished3) {
+                        continueY.value = withSpring(0, {
+                          damping: 10,
+                          stiffness: 40,
+                          mass: 0.2,
+                        });
+                      }
+                    },
+                  ),
+                );
+              }
+            },
+          );
+        }
+      },
+    );
+  };
 
   return (
-    <SafeAreaView style={{}}>
-      <Text onPress={() => setModalVisible(true)}>PostsScreen</Text>
+    <View style={styles.container}>
+      <Animated.View style={[styles.box, animatedStyle]} />
+      <Animated.Text style={[styles.text, textAnimatedStyle]} onPress={animate}>
+        Splash
+      </Animated.Text>
 
-      <Modal animationType="slide" visible={modalVisible} transparent>
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setModalVisible(false)}
-            hitSlop={8}
-          >
-            <Text style={{}}>X</Text>
-          </TouchableOpacity>
+      <Animated.View style={[styles.continueViewOuter, continueAnimatedStyle]}>
+        <Svg
+          width={width}
+          height={CURVE_HEIGHT}
+          style={StyleSheet.absoluteFill}
+        >
+          <Path
+            d={`M0,0 Q${
+              width / 2
+            },${CURVE_DEPTH} ${width},0 L${width},${CURVE_HEIGHT} L0,${CURVE_HEIGHT} Z`}
+            fill="#ffffff"
+          />
+        </Svg>
 
-          <View style={styles.iconRow}>
-            {TOOL_ICONS.map((icon, index) => (
-              <View key={index} style={styles.iconCircle}>
-                <Image
-                  source={icon}
-                  style={styles.iconImage}
-                  resizeMode="contain"
-                />
-              </View>
-            ))}
-          </View>
-
-          <Text style={styles.title}>Bring your tools together</Text>
-          <Text style={styles.description}>
-            Connect Drive, Gmail, and Notion to get started faster.
-          </Text>
+        <View style={styles.continueView}>
+          <Text style={styles.continueText}>Continue</Text>
         </View>
-      </Modal>
-    </SafeAreaView>
+      </Animated.View>
+    </View>
   );
 };
 
 export default PostsScreen;
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    backgroundColor: '#121212',
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  box: {
+    width: 60,
+    height: 60,
+    backgroundColor: '#2C8358',
+    borderRadius: 60,
+  },
+  text: {
+    position: 'absolute',
+    color: '#2C8358',
+    fontSize: 34,
+    fontWeight: '900',
+  },
+
+  continueViewOuter: {
     width: '100%',
+    height: 140,
     position: 'absolute',
     bottom: 0,
-    height: '80%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+
+  continueView: {
+    width: '60%',
+    backgroundColor: '#2C8358',
+    alignItems: 'center',
     padding: 20,
+    borderRadius: 8,
+    marginBottom: 20,
   },
-  closeButton: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#2c2c2e',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  iconRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: 40,
-    marginBottom: 16,
-    gap: 10,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 10,
-  },
-  iconImage: {
-    width: 26,
-    height: 26,
-  },
-  title: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  description: {
-    color: '#a0a0a5',
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
+  continueText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#fff',
   },
 });

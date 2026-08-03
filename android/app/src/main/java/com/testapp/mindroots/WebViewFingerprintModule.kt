@@ -10,77 +10,82 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 
 class WebViewFingerprintModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+        ReactContextBaseJavaModule(reactContext) {
 
-    override fun getName(): String {
-        return "WebViewFingerprintModule"
+  override fun getName(): String {
+    return "WebViewFingerprintModule"
+  }
+
+  @ReactMethod
+  fun getWebFingerprint(promise: Promise) {
+    val activity =
+            reactApplicationContext.currentActivity
+                    ?: run {
+                      promise.reject("NO_ACTIVITY", "currentActivity is null")
+                      return
+                    }
+
+    activity.runOnUiThread {
+      try {
+        setupWebView(promise)
+      } catch (e: Exception) {
+        promise.reject("FINGERPRINT_ERROR", e.message)
+      }
+    }
+  }
+
+  @SuppressLint("SetJavaScriptEnabled", "AddJavascriptInterface")
+  private fun setupWebView(promise: Promise) {
+    val activity =
+            reactApplicationContext.currentActivity
+                    ?: run {
+                      promise.reject("NO_ACTIVITY", "currentActivity is null")
+                      return
+                    }
+
+    val webView = WebView(activity)
+    webView.settings.javaScriptEnabled = true
+    webView.settings.domStorageEnabled = true
+    webView.settings.mediaPlaybackRequiresUserGesture = false
+    webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
+
+    var settled = false
+
+    fun cleanup() {
+      activity.runOnUiThread {
+        val parent = webView.parent as? android.view.ViewGroup
+        parent?.removeView(webView)
+        webView.destroy()
+      }
     }
 
-    @ReactMethod
-    fun getWebFingerprint(promise: Promise) {
-        val activity = reactApplicationContext.currentActivity ?: run {
-            promise.reject("NO_ACTIVITY", "currentActivity is null")
-            return
-        }
-
-        activity.runOnUiThread {
-            try {
-                setupWebView(promise)
-            } catch (e: Exception) {
-                promise.reject("FINGERPRINT_ERROR", e.message)
-            }
-        }
-    }
-
-    @SuppressLint("SetJavaScriptEnabled", "AddJavascriptInterface")
-    private fun setupWebView(promise: Promise) {
-        val activity = reactApplicationContext.currentActivity ?: run {
-            promise.reject("NO_ACTIVITY", "currentActivity is null")
-            return
-        }
-
-        val webView = WebView(activity)
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.mediaPlaybackRequiresUserGesture = false
-        webView.setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-
-        var settled = false
-
-        fun cleanup() {
-            activity.runOnUiThread {
-                val parent = webView.parent as? android.view.ViewGroup
-                parent?.removeView(webView)
-                webView.destroy()
-            }
-        }
-
-        webView.addJavascriptInterface(
+    webView.addJavascriptInterface(
             object {
-                @JavascriptInterface
-                fun onResult(json: String) {
-                    activity.runOnUiThread {
-                        if (settled) return@runOnUiThread
-                        settled = true
-                        promise.resolve(json)
-                        cleanup()
-                    }
+              @JavascriptInterface
+              fun onResult(json: String) {
+                activity.runOnUiThread {
+                  if (settled) return@runOnUiThread
+                  settled = true
+                  promise.resolve(json)
+                  cleanup()
                 }
+              }
 
-                @JavascriptInterface
-                fun onError(message: String) {
-                    activity.runOnUiThread {
-                        if (settled) return@runOnUiThread
-                        settled = true
-                        promise.reject("FINGERPRINT_JS_ERROR", message)
-                        cleanup()
-                    }
+              @JavascriptInterface
+              fun onError(message: String) {
+                activity.runOnUiThread {
+                  if (settled) return@runOnUiThread
+                  settled = true
+                  promise.reject("FINGERPRINT_JS_ERROR", message)
+                  cleanup()
                 }
+              }
             },
             "AndroidBridge"
-        )
+    )
 
-        val html = """
+    val html =
+            """
         <!DOCTYPE html>
         <html><body>
         <script>
@@ -165,26 +170,30 @@ class WebViewFingerprintModule(reactContext: ReactApplicationContext) :
         </body></html>
         """.trimIndent()
 
-        val rootView = activity.window.decorView as android.view.ViewGroup
-        val layoutParams = android.widget.FrameLayout.LayoutParams(1, 1)
-        webView.layoutParams = layoutParams
-        webView.alpha = 0f
-        rootView.addView(webView)
+    val rootView = activity.window.decorView as android.view.ViewGroup
+    val layoutParams = android.widget.FrameLayout.LayoutParams(1, 1)
+    webView.layoutParams = layoutParams
+    webView.alpha = 0f
+    rootView.addView(webView)
 
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
+    webView.webViewClient =
+            object : WebViewClient() {
+              override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+              }
             }
-        }
 
-        webView.loadDataWithBaseURL("https://mrtdeferlink.local/", html, "text/html", "UTF-8", null)
+    webView.loadDataWithBaseURL("https://mrtdeferlink.local/", html, "text/html", "UTF-8", null)
 
-        activity.window.decorView.postDelayed({
-            if (!settled) {
+    activity.window.decorView.postDelayed(
+            {
+              if (!settled) {
                 settled = true
                 promise.reject("FINGERPRINT_TIMEOUT", "WebView fingerprint timed out")
                 cleanup()
-            }
-        }, 3000)
-    }
+              }
+            },
+            3000
+    )
+  }
 }
