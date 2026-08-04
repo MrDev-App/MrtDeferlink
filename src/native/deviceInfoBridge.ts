@@ -36,6 +36,14 @@ export async function getNativeRegionInfo(): Promise<{
   }
 }
 
+export async function getNativeCurrencyCode(): Promise<string> {
+  try {
+    return await DeviceInfoModule.getCurrencyCode();
+  } catch {
+    return 'USD';
+  }
+}
+
 export async function getNativeIncreaseContrast(): Promise<boolean> {
   if (Platform.OS === 'ios') {
     try {

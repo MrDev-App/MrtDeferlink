@@ -18,7 +18,9 @@ export function init(options: SDKConfigOptions) {
 export async function getDeviceFingerprint() {
   const config = SDKConfig.get();
 
-  console.log('🔍 [MrtDeferlink] Step 1: Collecting native, web, and clock skew fingerprint components...');
+  console.log(
+    '🔍 [MrtDeferlink] Step 1: Collecting native, web, and clock skew fingerprint components...',
+  );
   const [nativePart, clockSkewMs, webPart] = await Promise.all([
     collectFingerprint(),
     getClockSkewMs(config.baseUrl),
@@ -27,7 +29,10 @@ export async function getDeviceFingerprint() {
 
   console.log('📱 [MrtDeferlink] Step 1a: Native Component:', nativePart);
   console.log('⏰ [MrtDeferlink] Step 1b: Clock Skew (ms):', clockSkewMs);
-  console.log('🌐 [MrtDeferlink] Step 1c: WebGL/Canvas/Audio Component:', webPart);
+  console.log(
+    '🌐 [MrtDeferlink] Step 1c: WebGL/Canvas/Audio Component:',
+    webPart,
+  );
 
   const fullFingerprint = { ...nativePart, clockSkewMs, ...webPart };
 
@@ -39,38 +44,51 @@ export async function getDeviceFingerprint() {
   const endpoint = ENDPOINT.APP_INFO.toString();
   const method = ENDPOINT.APP_INFO.method;
 
-  console.log(`📡 [MrtDeferlink] Step 3: Sending deferred match POST request to ${config.baseUrl}/${endpoint}`);
+  console.log(
+    `📡 [MrtDeferlink] Step 3: Sending deferred match POST request to ${config.baseUrl}/${endpoint}`,
+  );
   return fetchService(endpoint, method, config.baseUrl, fullFingerprint);
 }
 
 export async function resolveDeepLink(code: string) {
   const cleanCode = code.replace(/^r\//, '');
-  const baseUrl = 'https://app.digitalplayground.quest';
+  const baseUrl = SDKConfig.get().baseUrl;
   const endpoint = ENDPOINT.RESOLVE_LINK.withId(cleanCode);
   const method = ENDPOINT.RESOLVE_LINK.method;
 
-  console.log(`🔗 [MrtDeferlink] Resolving Direct Deep Link for code "${cleanCode}" via GET ${baseUrl}/${endpoint}...`);
+  console.log(
+    `🔗 [MrtDeferlink] Resolving Direct Deep Link for code "${cleanCode}" via GET ${baseUrl}/${endpoint}...`,
+  );
   return fetchService(endpoint, method, baseUrl, undefined, {
     'x-purpose': 'app-resolve',
   });
 }
 
 export async function checkDeferredDeepLink(forceCheck: boolean = false) {
-  console.log('🔍 [MrtDeferlink] Checking if deferred match has already been run for this installation...');
+  console.log(
+    '🔍 [MrtDeferlink] Checking if deferred match has already been run for this installation...',
+  );
 
   if (!forceCheck) {
     const alreadyChecked = await hasCheckedDeferredMatch();
     if (alreadyChecked) {
-      console.log('ℹ️ [MrtDeferlink] Deferred match was ALREADY executed previously on this device. Skipping.');
+      console.log(
+        'ℹ️ [MrtDeferlink] Deferred match was ALREADY executed previously on this device. Skipping.',
+      );
       return null;
     }
   }
 
-  console.log('🆕 [MrtDeferlink] First launch after installation detected! Executing deferred deep link match...');
+  console.log(
+    '🆕 [MrtDeferlink] First launch after installation detected! Executing deferred deep link match...',
+  );
   await markDeferredMatchChecked();
-  
+
   const response = await getDeviceFingerprint();
-  console.log('🎉 [MrtDeferlink] Deferred Match API Response:', JSON.stringify(response, null, 2));
+  console.log(
+    '🎉 [MrtDeferlink] Deferred Match API Response:',
+    JSON.stringify(response, null, 2),
+  );
 
   if (response && (response.matched || response.match)) {
     const rawSlug =
@@ -78,9 +96,13 @@ export async function checkDeferredDeepLink(forceCheck: boolean = false) {
       response.destinationPath ||
       response.destinationUrl ||
       response.destination;
-    const slug = rawSlug ? rawSlug.replace(/^\/+/, '').replace(/^r\//, '') : null;
-    
-    console.log(`🎯 [MrtDeferlink] DEFERRED MATCH FOUND! Target Slug: "${slug}"`);
+    const slug = rawSlug
+      ? rawSlug.replace(/^\/+/, '').replace(/^r\//, '')
+      : null;
+
+    console.log(
+      `🎯 [MrtDeferlink] DEFERRED MATCH FOUND! Target Slug: "${slug}"`,
+    );
     return {
       matched: true,
       slug,
@@ -88,7 +110,9 @@ export async function checkDeferredDeepLink(forceCheck: boolean = false) {
     };
   }
 
-  console.log('ℹ️ [MrtDeferlink] No deferred match link found for this device fingerprint.');
+  console.log(
+    'ℹ️ [MrtDeferlink] No deferred match link found for this device fingerprint.',
+  );
   return { matched: false, raw: response };
 }
 

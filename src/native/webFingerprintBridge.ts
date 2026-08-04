@@ -12,7 +12,6 @@ export type WebFingerprintResult = {
 };
 
 export async function getWebFingerprint(): Promise<WebFingerprintResult | null> {
-  // if (Platform.OS !== 'ios') return null;
   try {
     const raw = await WebViewFingerprintModule.getWebFingerprint();
     return JSON.parse(raw);

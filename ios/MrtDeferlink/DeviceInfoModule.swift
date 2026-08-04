@@ -2,10 +2,10 @@ import Foundation
 import Network
 
 @objc(DeviceInfoModule)
-class DeviceInfoModule: NSObject {
+class DeviceInfoModule: NSObject { 
 
   @objc
-  static func requiresMainQueueSetup() -> Bool {
+  static func requiresMainQueueSetup() -> Bool { 
     return false
   }
 
@@ -45,7 +45,7 @@ class DeviceInfoModule: NSObject {
       guard let value = element.value as? Int8, value != 0 else { return identifier }
       return identifier + String(UnicodeScalar(UInt8(value)))
     }
-    resolve(identifier)
+    resolve(identifier)  
   }
 
   @objc
@@ -63,6 +63,16 @@ class DeviceInfoModule: NSObject {
       "regionCode": region,
     ]
     resolve(result)
+  }
+
+  @objc
+  func getCurrencyCode(_ resolve: @escaping RCTPromiseResolveBlock,
+                       rejecter reject: @escaping RCTPromiseRejectBlock) {
+    if #available(iOS 16, *) {
+      resolve(Locale.current.currency?.identifier ?? "USD")
+    } else {
+      resolve(Locale.current.currencyCode ?? "USD")
+    }
   }
 
   @objc

@@ -41,7 +41,10 @@ export const fetchService = async (
   console.log(`\n🚀 [MrtDeferlink Network] === REQUEST START ===`);
   console.log(`➡️ URL: ${fullUrl}`);
   console.log(`➡️ Method: ${method}`);
-  console.log(`➡️ Headers:`, Object.fromEntries((headers as any).entries?.() || []));
+  console.log(
+    `➡️ Headers:`,
+    Object.fromEntries((headers as any).entries?.() || []),
+  );
   if (params && method !== 'GET') {
     console.log(`📦 Body:`, JSON.stringify(params, null, 2));
   }
@@ -92,7 +95,10 @@ export const fetchService = async (
         };
     }
   } catch (error: any) {
-    console.error(`❌ [MrtDeferlink Network] Request Failed (${fullUrl}):`, error);
+    console.error(
+      `❌ [MrtDeferlink Network] Request Failed (${fullUrl}):`,
+      error,
+    );
     return {
       status: false,
       data: undefined,

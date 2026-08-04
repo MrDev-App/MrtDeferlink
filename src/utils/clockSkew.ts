@@ -3,11 +3,9 @@ export async function getClockSkewMs(apiUrl: string): Promise<number> {
     const localBefore = Date.now();
     const response = await fetch(apiUrl, { method: 'HEAD' });
     const localAfter = Date.now();
-
     const serverDateHeader = response.headers.get('date');
     console.log('[MrtDeferlink] serverDateHeader:', serverDateHeader);
     if (!serverDateHeader) return 0;
-
     const serverTime = new Date(serverDateHeader).getTime();
     console.log('[MrtDeferlink] serverTime:', serverTime);
     const localMidpoint = (localBefore + localAfter) / 2;

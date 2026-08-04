@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { Linking, StatusBar, useColorScheme } from 'react-native';
+import { StatusBar } from 'react-native';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { init, fetchService, ENDPOINT } from './src';
+import { init } from './src';
 import { NativeModules } from 'react-native';
 
 init({
@@ -11,8 +11,15 @@ init({
 
 const { InstallReferrerModule } = NativeModules;
 
-export const getInstallReferrer = () =>
-  InstallReferrerModule.getInstallReferrer();
+export const getInstallReferrer = () => {
+  if (
+    InstallReferrerModule &&
+    typeof InstallReferrerModule.getInstallReferrer === 'function'
+  ) {
+    return InstallReferrerModule.getInstallReferrer();
+  }
+  return Promise.resolve(null);
+};
 
 const App = () => {
   useEffect(() => {

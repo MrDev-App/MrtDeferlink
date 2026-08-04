@@ -140,6 +140,16 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun getCurrencyCode(promise: Promise) {
+        try {
+            val currency = java.util.Currency.getInstance(Locale.getDefault()).currencyCode
+            promise.resolve(currency)
+        } catch (e: Exception) {
+            promise.resolve("USD")
+        }
+    }
+
+    @ReactMethod
     fun isHighContrastEnabled(promise: Promise) {
         try {
             val resolver = reactApplicationContext.contentResolver

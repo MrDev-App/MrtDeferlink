@@ -19,6 +19,9 @@ import {
   getConnectionType,
   getNative24HourClock,
   getNativeRegionInfo,
+  getNativeIncreaseContrast,
+  getNativeBoldText,
+  getNativeCurrencyCode,
 } from '../native/deviceInfoBridge';
 
 function getScreenBucket(widthPx: number): 'large' | 'medium' | 'small' {
@@ -63,8 +66,6 @@ export type NativeFingerprint = {
 };
 
 export async function collectFingerprint(): Promise<NativeFingerprint> {
-  const isIOS = Platform.OS === 'ios';
-
   const locale = getDeviceLocale();
   const languages = getDeviceLanguages();
   const regionCode = getRegionCode(locale);
@@ -76,16 +77,18 @@ export async function collectFingerprint(): Promise<NativeFingerprint> {
     increaseContrast,
     boldText,
     native24Hour,
+    nativeRegionInfo,
+    currency,
   ] = await Promise.all([
     getConnectionType(),
     getDeviceModel(),
     AccessibilityInfo.isReduceMotionEnabled(),
-    isIOS ? AccessibilityInfo.isInvertColorsEnabled() : Promise.resolve(false),
-    isIOS ? AccessibilityInfo.isBoldTextEnabled() : Promise.resolve(false),
-    isIOS ? getNative24HourClock() : Promise.resolve(null),
+    getNativeIncreaseContrast(),
+    getNativeBoldText(),
+    getNative24HourClock(),
+    getNativeRegionInfo(),
+    getNativeCurrencyCode(),
   ]);
-
-  const nativeRegionInfo = isIOS ? await getNativeRegionInfo() : null;
 
   const { width } = Dimensions.get('screen');
   const pixelRatio = PixelRatio.get();
@@ -96,7 +99,7 @@ export async function collectFingerprint(): Promise<NativeFingerprint> {
     clickSessionId: generateUUID(),
     colorScheme: Appearance.getColorScheme(),
     connectionType: netState,
-    currency: 'USD',
+    currency,
     deviceModelClass: Platform.OS,
     deviceName,
     devicePixelRatioBucket: getPixelRatioBucket(pixelRatio),
