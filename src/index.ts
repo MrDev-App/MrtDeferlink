@@ -44,8 +44,13 @@ export async function getDeviceFingerprint() {
   const endpoint = ENDPOINT.APP_INFO.toString();
   const method = ENDPOINT.APP_INFO.method;
 
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const fullUrl = config.baseUrl.endsWith('/')
+    ? `${config.baseUrl}${cleanEndpoint}`
+    : `${config.baseUrl}/${cleanEndpoint}`;
+
   console.log(
-    `📡 [MrtDeferlink] Step 3: Sending deferred match POST request to ${config.baseUrl}/${endpoint}`,
+    `📡 [MrtDeferlink] Step 3: Sending deferred match POST request to ${fullUrl}`,
   );
   return fetchService(endpoint, method, config.baseUrl, fullFingerprint);
 }
@@ -56,12 +61,15 @@ export async function resolveDeepLink(code: string) {
   const endpoint = ENDPOINT.RESOLVE_LINK.withId(cleanCode);
   const method = ENDPOINT.RESOLVE_LINK.method;
 
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const fullUrl = baseUrl.endsWith('/')
+    ? `${baseUrl}${cleanEndpoint}`
+    : `${baseUrl}/${cleanEndpoint}`;
+
   console.log(
-    `🔗 [MrtDeferlink] Resolving Direct Deep Link for code "${cleanCode}" via GET ${baseUrl}/${endpoint}...`,
+    `🔗 [MrtDeferlink] Resolving Direct Deep Link for code "${cleanCode}" via GET ${fullUrl}...`,
   );
-  return fetchService(endpoint, method, baseUrl, undefined, {
-    'x-purpose': 'app-resolve',
-  });
+  return fetchService(endpoint, method, baseUrl);
 }
 
 export async function checkDeferredDeepLink(forceCheck: boolean = false) {

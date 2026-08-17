@@ -5,6 +5,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:app.digitalplayground.quest</string>
+		<string>applinks:devajaysorg.theblockyapp.com</string>
 	</array>
 </dict>
 </plist>

@@ -5,7 +5,7 @@ import { init } from './src';
 import { NativeModules } from 'react-native';
 
 init({
-  baseUrl: 'https://api.digitalplayground.quest',
+  baseUrl: 'https://api.theblockyapp.com',
   debug: __DEV__,
 });
 

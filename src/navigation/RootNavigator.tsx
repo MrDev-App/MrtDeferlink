@@ -29,7 +29,11 @@ function extractCodeFromUrl(url: string | null | undefined): string | null {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: [SDKConfig.get().baseUrl],
+  prefixes: [
+    SDKConfig.get().baseUrl,
+    'https://devajaysorg.theblockyapp.com',
+    'mrtdeferlink://',
+  ],
   config: {
     screens: {
       MainTabs: {

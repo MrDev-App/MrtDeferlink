@@ -37,7 +37,6 @@ class WebViewFingerprintModule: NSObject, WKScriptMessageHandler {
       cleanup()
     }
   }
-
   private func cleanup() {
     webView?.configuration.userContentController.removeScriptMessageHandler(forName: "fingerprintHandler")
     webView = nil

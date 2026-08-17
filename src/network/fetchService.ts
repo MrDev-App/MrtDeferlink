@@ -1,4 +1,5 @@
-import { METHOD } from './endpoint';
+import { METHOD, ENDPOINT } from './endpoint';
+import { SDKConfig } from '../config/sdkConfig';
 
 type ApiOptions = {
   method: string;
@@ -16,18 +17,38 @@ export const fetchService = async (
   >,
   customHeaders?: Record<string, string>,
 ) => {
-  const headers = new Headers({
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-    ...customHeaders,
-  });
+  const isResolveLink =
+    endpoint === ENDPOINT.RESOLVE_LINK.toString() ||
+    endpoint.startsWith(ENDPOINT.RESOLVE_LINK.toString() + '/');
+
+  let apiKey =
+    'pk_live_ad6bfc7a7cfc938b822c9635cf26c7ccea5b367591f0176015e5955a6ef63ebb';
+  try {
+    if (SDKConfig.isInitialized()) {
+      apiKey = SDKConfig.get().apiKey || apiKey;
+    }
+  } catch (e) {}
+
+  const headers = new Headers(
+    isResolveLink
+      ? {
+          Accept: 'application/json',
+          'x-api-key': apiKey,
+        }
+      : {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          ...customHeaders,
+        },
+  );
 
   let apiOptions: ApiOptions = {
     method,
     headers,
   };
 
-  if (params != null && method !== 'GET') {
+  if (params != null && method !== 'GET' && !isResolveLink) {
     apiOptions = {
       ...apiOptions,
       body: JSON.stringify(params),
@@ -66,7 +87,6 @@ export const fetchService = async (
       case 201:
       case 400:
         return { ...jsonData, status_code: statusCode };
-
       case 401:
       case 402:
       case 403:

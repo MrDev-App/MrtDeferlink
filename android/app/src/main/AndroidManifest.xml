@@ -32,7 +32,16 @@
             <data android:scheme="https" android:host="app.digitalplayground.quest" android:pathPrefix="/l/" />
             <data android:scheme="http" android:host="app.digitalplayground.quest" android:pathPrefix="/r/" />
             <data android:scheme="http" android:host="app.digitalplayground.quest" android:pathPrefix="/l/" />
+        </intent-filter> 
+
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" android:host="devajaysorg.theblockyapp.com" />
+            <data android:scheme="http" android:host="devajaysorg.theblockyapp.com" />
         </intent-filter>
+        
       </activity>
     </application>
 </manifest>
