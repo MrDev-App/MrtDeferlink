@@ -13,17 +13,29 @@ const PostDetailScreen = ({ route }: RootStackScreenProps<'PostDetail'>) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log(`📱 [PostDetailScreen] Mounted with params:`, { id, path, currentPath });
+    console.log(`📱 [PostDetailScreen] Mounted with params:`, {
+      id,
+      path,
+      currentPath,
+    });
     if (currentPath) {
       setLoading(true);
-      console.log(`📡 [PostDetailScreen] Triggering resolveDeepLink for code: "${currentPath}"...`);
+      console.log(
+        `📡 [PostDetailScreen] Triggering resolveDeepLink for code: "${currentPath}"...`,
+      );
       resolveDeepLink(currentPath)
-        .then((res) => {
-          console.log(`✅ [PostDetailScreen] Successfully resolved deep link data:`, JSON.stringify(res, null, 2));
+        .then(res => {
+          console.log(
+            `✅ [PostDetailScreen] Successfully resolved deep link data:`,
+            JSON.stringify(res, null, 2),
+          );
           setResolvedData(res);
         })
-        .catch((err) => {
-          console.error(`❌ [PostDetailScreen] Error resolving deep link:`, err);
+        .catch(err => {
+          console.error(
+            `❌ [PostDetailScreen] Error resolving deep link:`,
+            err,
+          );
           setError(err?.message || 'Failed to resolve deep link');
         })
         .finally(() => setLoading(false));
@@ -47,7 +59,9 @@ const PostDetailScreen = ({ route }: RootStackScreenProps<'PostDetail'>) => {
       {resolvedData && (
         <View style={styles.dataContainer}>
           <Text style={styles.dataTitle}>Resolved API Data:</Text>
-          <Text style={styles.jsonText}>{JSON.stringify(resolvedData, null, 2)}</Text>
+          <Text style={styles.jsonText}>
+            {JSON.stringify(resolvedData, null, 2)}
+          </Text>
         </View>
       )}
     </SafeAreaView>

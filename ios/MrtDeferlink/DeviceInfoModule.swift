@@ -110,6 +110,162 @@ class DeviceInfoModule: NSObject {
     resolve(true)
   }
 
+  @objc
+  func getScreenBucket(_ resolve: @escaping RCTPromiseResolveBlock,
+                       rejecter reject: @escaping RCTPromiseRejectBlock) {
+    DispatchQueue.main.async {
+      let width = UIScreen.main.bounds.width
+      if width >= 428 {
+        resolve("large")
+      } else if width >= 375 {
+        resolve("medium")
+      } else {
+        resolve("small")
+      }
+    }
+  }
+
+  @objc
+  func getPixelRatioBucket(_ resolve: @escaping RCTPromiseResolveBlock,
+                           rejecter reject: @escaping RCTPromiseRejectBlock) {
+    DispatchQueue.main.async {
+      let scale = UIScreen.main.scale
+      if scale >= 2.5 {
+        resolve("high")
+      } else {
+        resolve("standard")
+      }
+    }
+  }
+
+  @objc
+  func getDynamicTypeSize(_ resolve: @escaping RCTPromiseResolveBlock,
+                          rejecter reject: @escaping RCTPromiseRejectBlock) {
+    DispatchQueue.main.async {
+      let category = UIApplication.shared.preferredContentSizeCategory
+      var scale: Double = 1.0
+      switch category {
+      case .extraSmall: scale = 0.82
+      case .small: scale = 0.88
+      case .medium: scale = 0.94
+      case .large: scale = 1.0
+      case .extraLarge: scale = 1.12
+      case .extraExtraLarge: scale = 1.24
+      case .extraExtraExtraLarge: scale = 1.35
+      case .accessibilityMedium: scale = 1.65
+      case .accessibilityLarge: scale = 1.94
+      case .accessibilityExtraLarge: scale = 2.24
+      case .accessibilityExtraExtraLarge: scale = 2.59
+      case .accessibilityExtraExtraExtraLarge: scale = 3.06
+      default: scale = 1.0
+      }
+      
+      if scale >= 1.3 {
+        resolve("XL")
+      } else if scale >= 1.15 {
+        resolve("L")
+      } else if scale <= 0.9 {
+        resolve("S")
+      } else {
+        resolve("M")
+      }
+    }
+  }
+
+  @objc
+  func getDeviceLocale(_ resolve: @escaping RCTPromiseResolveBlock,
+                       rejecter reject: @escaping RCTPromiseRejectBlock) {
+    let locale = Locale.preferredLanguages.first ?? Locale.current.identifier
+    resolve(locale.replacingOccurrences(of: "_", with: "-"))
+  }
+
+  @objc
+  func getDeviceLanguages(_ resolve: @escaping RCTPromiseResolveBlock,
+                          rejecter reject: @escaping RCTPromiseRejectBlock) {
+    let languages = Locale.preferredLanguages.map { $0.replacingOccurrences(of: "_", with: "-") }
+    resolve(languages)
+  }
+
+  @objc
+  func getRegionCode(_ resolve: @escaping RCTPromiseResolveBlock,
+                     rejecter reject: @escaping RCTPromiseRejectBlock) {
+    let region: String
+    if #available(iOS 16, *) {
+      region = Locale.current.region?.identifier ?? ""
+    } else {
+      region = Locale.current.regionCode ?? ""
+    }
+    resolve(region.uppercased())
+  }
+
+  @objc
+  func isReduceMotionEnabled(_ resolve: @escaping RCTPromiseResolveBlock,
+                             rejecter reject: @escaping RCTPromiseRejectBlock) {
+    DispatchQueue.main.async {
+      resolve(UIAccessibility.isReduceMotionEnabled)
+    }
+  }
+
+  @objc
+  func getTimeZone(_ resolve: @escaping RCTPromiseResolveBlock,
+                   rejecter reject: @escaping RCTPromiseRejectBlock) {
+    resolve(TimeZone.current.identifier)
+  }
+
+  @objc
+  func getClockSkewMs(_ apiUrl: String,
+                      resolve: @escaping RCTPromiseResolveBlock,
+                      rejecter reject: @escaping RCTPromiseRejectBlock) {
+    guard let url = URL(string: apiUrl) else {
+      resolve(0)
+      return
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "HEAD"
+    request.cachePolicy = .reloadIgnoringLocalCacheData
+
+    let localBefore = Date().timeIntervalSince1970 * 1000.0
+
+    let task = URLSession.shared.dataTask(with: request) { _, response, error in
+      if error != nil {
+        resolve(0)
+        return
+      }
+
+      let localAfter = Date().timeIntervalSince1970 * 1000.0
+
+      guard let httpResponse = response as? HTTPURLResponse,
+            let serverDateStr = httpResponse.value(forHTTPHeaderField: "Date") else {
+        resolve(0)
+        return
+      }
+
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss z"
+      formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+      guard let serverDate = formatter.date(from: serverDateStr) else {
+        resolve(0)
+        return
+      }
+
+      let serverTime = serverDate.timeIntervalSince1970 * 1000.0
+      let localMidpoint = (localBefore + localAfter) / 2.0
+      let diff = Int(round(localMidpoint - serverTime))
+
+      resolve(diff)
+    }
+    task.resume()
+  }
+
+  @objc
+  func generateUUID(_ resolve: @escaping RCTPromiseResolveBlock,
+                    rejecter reject: @escaping RCTPromiseRejectBlock) {
+    resolve(UUID().uuidString.lowercased())
+  }
+
   private func getAppInstallTimestamp() -> Double {
     if let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
        let attributes = try? FileManager.default.attributesOfItem(atPath: documentsURL.path),

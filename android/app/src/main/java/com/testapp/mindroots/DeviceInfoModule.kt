@@ -291,4 +291,171 @@ class DeviceInfoModule(reactContext: ReactApplicationContext) :
             promise.reject("CLIPBOARD_ERROR", e)
         }
     }
+
+    @ReactMethod
+    fun getScreenBucket(promise: Promise) {
+        try {
+            val metrics = reactApplicationContext.resources.displayMetrics
+            val widthDp = metrics.widthPixels / metrics.density
+            val bucket = when {
+                widthDp >= 428 -> "large"
+                widthDp >= 375 -> "medium"
+                else -> "small"
+            }
+            promise.resolve(bucket)
+        } catch (e: Exception) {
+            promise.resolve("small")
+        }
+    }
+
+    @ReactMethod
+    fun getPixelRatioBucket(promise: Promise) {
+        try {
+            val density = reactApplicationContext.resources.displayMetrics.density
+            val bucket = if (density >= 2.5) "high" else "standard"
+            promise.resolve(bucket)
+        } catch (e: Exception) {
+            promise.resolve("standard")
+        }
+    }
+
+    @ReactMethod
+    fun getDynamicTypeSize(promise: Promise) {
+        try {
+            val fontScale = reactApplicationContext.resources.configuration.fontScale
+            val size = when {
+                fontScale >= 1.3f -> "XL"
+                fontScale >= 1.15f -> "L"
+                fontScale <= 0.9f -> "S"
+                else -> "M"
+            }
+            promise.resolve(size)
+        } catch (e: Exception) {
+            promise.resolve("M")
+        }
+    }
+
+    @ReactMethod
+    fun getDeviceLocale(promise: Promise) {
+        try {
+            val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                reactApplicationContext.resources.configuration.locales.get(0).toLanguageTag()
+            } else {
+                @Suppress("DEPRECATION")
+                reactApplicationContext.resources.configuration.locale.toLanguageTag()
+            }
+            promise.resolve(locale)
+        } catch (e: Exception) {
+            promise.resolve("en-US")
+        }
+    }
+
+    @ReactMethod
+    fun getDeviceLanguages(promise: Promise) {
+        try {
+            val languages = Arguments.createArray()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                val locales = reactApplicationContext.resources.configuration.locales
+                for (i in 0 until locales.size()) {
+                    languages.pushString(locales.get(i).toLanguageTag())
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                languages.pushString(reactApplicationContext.resources.configuration.locale.toLanguageTag())
+            }
+            promise.resolve(languages)
+        } catch (e: Exception) {
+            val fallback = Arguments.createArray()
+            fallback.pushString("en-US")
+            promise.resolve(fallback)
+        }
+    }
+
+    @ReactMethod
+    fun getRegionCode(promise: Promise) {
+        try {
+            val country = Locale.getDefault().country
+            promise.resolve(country.uppercase(Locale.ROOT))
+        } catch (e: Exception) {
+            promise.resolve("")
+        }
+    }
+
+    @ReactMethod
+    fun isReduceMotionEnabled(promise: Promise) {
+        try {
+            val scale = Settings.Global.getFloat(
+                reactApplicationContext.contentResolver,
+                Settings.Global.TRANSITION_ANIMATION_SCALE,
+                1.0f
+            )
+            promise.resolve(scale == 0.0f)
+        } catch (e: Exception) {
+            promise.resolve(false)
+        }
+    }
+
+    @ReactMethod
+    fun getTimeZone(promise: Promise) {
+        try {
+            promise.resolve(java.util.TimeZone.getDefault().id)
+        } catch (e: Exception) {
+            promise.resolve("UTC")
+        }
+    }
+
+    @ReactMethod
+    fun getClockSkewMs(apiUrl: String, promise: Promise) {
+        Thread {
+            var connection: java.net.HttpURLConnection? = null
+            try {
+                val url = java.net.URL(apiUrl)
+                val localBefore = System.currentTimeMillis()
+
+                connection = url.openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "HEAD"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.useCaches = false
+
+                connection.connect()
+
+                val localAfter = System.currentTimeMillis()
+                val serverDateStr = connection.getHeaderField("Date")
+
+                if (serverDateStr.isNullOrEmpty()) {
+                    promise.resolve(0)
+                    return@Thread
+                }
+
+                val format = java.text.SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", java.util.Locale.US)
+                format.timeZone = java.util.TimeZone.getTimeZone("GMT")
+                val serverDate = format.parse(serverDateStr)
+
+                if (serverDate == null) {
+                    promise.resolve(0)
+                    return@Thread
+                }
+
+                val serverTime = serverDate.time
+                val localMidpoint = (localBefore + localAfter) / 2.0
+                val diff = Math.round(localMidpoint - serverTime).toInt()
+
+                promise.resolve(diff)
+            } catch (e: Exception) {
+                promise.resolve(0)
+            } finally {
+                connection?.disconnect()
+            }
+        }.start()
+    }
+
+    @ReactMethod
+    fun generateUUID(promise: Promise) {
+        try {
+            promise.resolve(java.util.UUID.randomUUID().toString())
+        } catch (e: Exception) {
+            promise.resolve("")
+        }
+    }
 }

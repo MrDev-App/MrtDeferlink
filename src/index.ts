@@ -1,10 +1,10 @@
 import { SDKConfig, SDKConfigOptions } from './config/sdkConfig';
 import { collectFingerprint } from './utils/fingerprint';
-import { getClockSkewMs } from './utils/clockSkew';
 import { getWebFingerprint } from './native/webFingerprintBridge';
 import {
   hasCheckedDeferredMatch,
   markDeferredMatchChecked,
+  getClockSkewMs,
 } from './native/deviceInfoBridge';
 
 import { ENDPOINT } from './network/endpoint';

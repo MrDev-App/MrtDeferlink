@@ -1,20 +1,10 @@
 import {
   Platform,
-  Dimensions,
-  PixelRatio,
   Appearance,
-  AccessibilityInfo,
 } from 'react-native';
 
 import {
-  getDeviceLocale,
-  getDeviceLanguages,
-  getRegionCode,
-  getTimeZone,
-  uses24HourClock,
-} from './locale';
-import { generateUUID } from './uuid';
-import {
+  generateUUID,
   getDeviceModel,
   getConnectionType,
   getNative24HourClock,
@@ -22,25 +12,15 @@ import {
   getNativeIncreaseContrast,
   getNativeBoldText,
   getNativeCurrencyCode,
+  getScreenBucket,
+  getPixelRatioBucket,
+  getDynamicTypeSize,
+  getDeviceLocale,
+  getDeviceLanguages,
+  getRegionCode,
+  getTimeZone,
+  isReduceMotionEnabled,
 } from '../native/deviceInfoBridge';
-
-function getScreenBucket(widthPx: number): 'large' | 'medium' | 'small' {
-  if (widthPx >= 428) return 'large';
-  if (widthPx >= 375) return 'medium';
-  return 'small';
-}
-
-function getPixelRatioBucket(ratio: number): 'high' | 'standard' {
-  if (ratio >= 2.5) return 'high';
-  return 'standard';
-}
-
-function getDynamicTypeSize(scale: number): 'XL' | 'L' | 'M' | 'S' {
-  if (scale >= 1.3) return 'XL';
-  if (scale >= 1.15) return 'L';
-  if (scale <= 0.9) return 'S';
-  return 'M';
-}
 
 export type NativeFingerprint = {
   appOpenAt: number;
@@ -66,10 +46,6 @@ export type NativeFingerprint = {
 };
 
 export async function collectFingerprint(): Promise<NativeFingerprint> {
-  const locale = getDeviceLocale();
-  const languages = getDeviceLanguages();
-  const regionCode = getRegionCode(locale);
-
   const [
     netState,
     deviceName,
@@ -79,34 +55,44 @@ export async function collectFingerprint(): Promise<NativeFingerprint> {
     native24Hour,
     nativeRegionInfo,
     currency,
+    screenBucket,
+    devicePixelRatioBucket,
+    dynamicTypeSize,
+    languages,
+    regionCode,
+    timezone,
+    clickSessionId,
+    locale,
   ] = await Promise.all([
     getConnectionType(),
     getDeviceModel(),
-    AccessibilityInfo.isReduceMotionEnabled(),
+    isReduceMotionEnabled(),
     getNativeIncreaseContrast(),
     getNativeBoldText(),
     getNative24HourClock(),
     getNativeRegionInfo(),
     getNativeCurrencyCode(),
+    getScreenBucket(),
+    getPixelRatioBucket(),
+    getDynamicTypeSize(),
+    getDeviceLanguages(),
+    getRegionCode(),
+    getTimeZone(),
+    generateUUID(),
+    getDeviceLocale(),
   ]);
-
-  const { width } = Dimensions.get('screen');
-  const pixelRatio = PixelRatio.get();
-  const fontScale = PixelRatio.getFontScale();
 
   const fingerprint: NativeFingerprint = {
     appOpenAt: Date.now(),
-    clickSessionId: generateUUID(),
+    clickSessionId,
     colorScheme: Appearance.getColorScheme(),
     connectionType: netState,
     currency,
     deviceModelClass: Platform.OS,
     deviceName,
-    devicePixelRatioBucket: getPixelRatioBucket(pixelRatio),
-    dynamicTypeSize: getDynamicTypeSize(fontScale),
-    hourCycle: (native24Hour !== null ? native24Hour : uses24HourClock(locale))
-      ? 'h24'
-      : 'h12',
+    devicePixelRatioBucket,
+    dynamicTypeSize,
+    hourCycle: native24Hour ? 'h24' : 'h12',
     increaseContrast,
     boldText,
     languagesOrdered: languages.join(','),
@@ -114,8 +100,8 @@ export async function collectFingerprint(): Promise<NativeFingerprint> {
     osVersionMajor: Platform.Version.toString().split('.')[0],
     reduceMotion,
     regionCode: nativeRegionInfo?.regionCode || regionCode,
-    screenBucket: getScreenBucket(width),
-    timezone: getTimeZone(),
+    screenBucket,
+    timezone,
   };
 
   console.log(
