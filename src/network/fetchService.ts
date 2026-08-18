@@ -21,13 +21,7 @@ export const fetchService = async (
     endpoint === ENDPOINT.RESOLVE_LINK.toString() ||
     endpoint.startsWith(ENDPOINT.RESOLVE_LINK.toString() + '/');
 
-  let apiKey =
-    'pk_live_ad6bfc7a7cfc938b822c9635cf26c7ccea5b367591f0176015e5955a6ef63ebb';
-  try {
-    if (SDKConfig.isInitialized()) {
-      apiKey = SDKConfig.get().apiKey || apiKey;
-    }
-  } catch (e) {}
+  const apiKey = SDKConfig.get().apiKey;
 
   const headers = new Headers(
     isResolveLink

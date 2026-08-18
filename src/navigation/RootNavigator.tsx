@@ -50,7 +50,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
     console.log(
       '🔍 [RootNavigator Linking] Checking Linking.getInitialURL()...',
     );
-    const url = await Linking.getInitialURL();
+    const url = await Linking.getInitialURL(); 
     if (url) {
       console.log(
         '📌 [RootNavigator Linking] Direct Universal Link detected on initial launch:',
