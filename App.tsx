@@ -27,7 +27,7 @@ const App = () => {
   useEffect(() => {
     getInstallReferrer().then((referrer: any) => {
       console.log('Install Referrer:', referrer);
-    }); 
+    });
   }, []);
   return (
     <>
