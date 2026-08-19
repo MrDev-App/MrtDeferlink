@@ -178,7 +178,6 @@ export const RootNavigator: React.FC = () => {
     <NavigationContainer
       ref={navigationRef}
       linking={linking}
-      fallback={<LoadingFallback />}
     >
       <Stack.Navigator
         initialRouteName="MainTabs"
